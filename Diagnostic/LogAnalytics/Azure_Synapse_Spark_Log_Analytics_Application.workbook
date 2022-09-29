@@ -14,7 +14,7 @@
             "type": 4,
             "isRequired": true,
             "value": {
-              "durationMs": 86400000
+              "durationMs": 604800000
             },
             "typeSettings": {
               "selectableValues": [
@@ -80,7 +80,7 @@
             "timeContextFromParameter": "TimeRange",
             "queryType": 0,
             "resourceType": "microsoft.operationalinsights/workspaces",
-            "value": null
+            "value": "asethialoganalytics"
           },
           {
             "id": "65632680-7b6a-4b0a-896c-7f7bc7d5c934",
@@ -99,7 +99,8 @@
             },
             "timeContextFromParameter": "TimeRange",
             "queryType": 0,
-            "resourceType": "microsoft.operationalinsights/workspaces"
+            "resourceType": "microsoft.operationalinsights/workspaces",
+            "value": "testsparkpool"
           },
           {
             "id": "9d5e1d9f-ced7-4c00-8b9d-bc7864b23067",
@@ -110,7 +111,7 @@
             "description": "Spark Application Livy Id and Name",
             "isRequired": true,
             "query": "SparkMetrics_CL\r\n| where workspaceName_s == \"{Workspace}\" and clusterName_s == \"{SparkPool}\" and isnotempty(livyId_s)\r\n| extend applicationName = column_ifexists(\"applicationName_s\", applicationId_s)\r\n| summarize by livyId_s, applicationName\r\n| order by livyId_s desc\r\n| project value = livyId_s, label = strcat(livyId_s, \" | \", applicationName), selected = false",
-            "value": null,
+            "value": "0",
             "typeSettings": {
               "additionalResourceOptions": [],
               "showDefault": false
@@ -284,13 +285,10 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "SparkLoggingEvent_CL\r\n| where workspaceName_s == \"{Workspace}\" and clusterName_s == \"{SparkPool}\" and livyId_s == \"{LivyId}\"\r\n| project TimeGenerated, executorId_s, Level, logger_name_s, Message\r\n| where iff(\"{Logger:label}\" == \"All\", true, logger_name_s in ({Logger}))\r\n| where iff(\"{Level:label}\" == \"All\", true, Level in ({Level}))\r\n| order by TimeGenerated asc\r\n| limit 1000",
+        "query": "SparkLoggingEvent_CL\r\n| where workspaceName_s == \"{Workspace}\" and clusterName_s == \"{SparkPool}\" and livyId_s == \"{LivyId}\"\r\n| project TimeGenerated, executorId_s, Level, logger_name_s, Message, exception_stacktrace_s\r\n| where iff(\"{Logger:label}\" == \"All\", true, logger_name_s in ({Logger}))\r\n| where iff(\"{Level:label}\" == \"All\", true, Level in ({Level}))\r\n| order by TimeGenerated asc\r\n| limit 1000",
         "size": 2,
         "showAnalytics": true,
         "title": "View and Filter Logs",
-        "timeContext": {
-          "durationMs": 86400000
-        },
         "timeContextFromParameter": "TimeRange",
         "showExportToExcel": true,
         "queryType": 0,
@@ -399,9 +397,6 @@
         "showAnnotations": true,
         "showAnalytics": true,
         "title": "Custom Metric",
-        "timeContext": {
-          "durationMs": 0
-        },
         "timeContextFromParameter": "TimeRange",
         "showRefreshButton": true,
         "queryType": 0,
@@ -483,14 +478,11 @@
       "type": 3,
       "content": {
         "version": "KqlItem/1.0",
-        "query": "let Data = SparkListenerEvent_CL\r\n| where workspaceName_s == \"{Workspace}\" and clusterName_s == \"{SparkPool}\" and livyId_s == \"{LivyId}\";\r\n\r\nunion\r\n(SparkMetrics_CL\r\n| where workspaceName_s == \"{Workspace}\" and clusterName_s == \"{SparkPool}\" and livyId_s == \"{LivyId}\"\r\n| where executorId_s != \"driver\"\r\n| summarize by executorId_s\r\n| count as Value\r\n| extend Name=\"Executors\", Order=0\r\n),\r\n(Data\r\n| where Event_s == \"SparkListenerJobStart\"\r\n| count as Value \r\n| extend Name=\"JobStarted\", Order=1\r\n),\r\n(Data\r\n| where Event_s == \"SparkListenerJobEnd\" and Job_Result_Result_s == \"JobSucceeded\"\r\n| count as Value \r\n| extend Name=\"JobSucceeded\", Order=2\r\n),\r\n(Data\r\n| where Event_s == \"SparkListenerJobEnd\" and Job_Result_Result_s == \"JobFailed\"\r\n| count as Value \r\n| extend Name=\"JobFailed\", Order=3\r\n),\r\n(Data\r\n| where Event_s == \"SparkListenerStageSubmitted\"\r\n| count as Value \r\n| extend Name=\"StageSubmitted\", Order=4\r\n),\r\n(Data\r\n| where Event_s == \"SparkListenerTaskStart\"\r\n| count as Value \r\n| extend Name=\"TaskStarted\", Order=5\r\n),\r\n(Data\r\n| where Event_s == \"SparkListenerTaskEnd\"\r\n| count as Value \r\n| extend Name=\"TaskEnded\", Order=6\r\n)\r\n",
+        "query": "let Data = SparkListenerEvent_CL\r\n| where workspaceName_s == \"{Workspace}\" and clusterName_s == \"{SparkPool}\" and livyId_s == \"{LivyId}\";\r\n\r\nunion\r\n(SparkMetrics_CL\r\n| where workspaceName_s == \"{Workspace}\" and clusterName_s == \"{SparkPool}\" and livyId_s == \"{LivyId}\"\r\n| where executorId_s != \"driver\"\r\n| summarize by executorId_s\r\n| count as Value\r\n| extend Name=\"Executors\", Order=0\r\n),\r\n(Data\r\n| where Event_s == \"SparkListenerJobStart\"\r\n| count as Value \r\n| extend Name=\"JobStarted\", Order=1\r\n),\r\n(Data\r\n| where Event_s == \"SparkListenerJobEnd\" \r\n| count as Value \r\n| extend Name=\"JobSucceeded\", Order=2\r\n),\r\n(Data\r\n| where Event_s == \"SparkListenerJobEnd\" \r\n| count as Value \r\n| extend Name=\"JobFailed\", Order=3\r\n),\r\n(Data\r\n| where Event_s == \"SparkListenerStageSubmitted\"\r\n| count as Value \r\n| extend Name=\"StageSubmitted\", Order=4\r\n),\r\n(Data\r\n| where Event_s == \"SparkListenerTaskStart\"\r\n| count as Value \r\n| extend Name=\"TaskStarted\", Order=5\r\n),\r\n(Data\r\n| where Event_s == \"SparkListenerTaskEnd\"\r\n| count as Value \r\n| extend Name=\"TaskEnded\", Order=6\r\n)\r\n",
         "size": 4,
         "showAnnotations": true,
         "showAnalytics": true,
         "title": "Application Overview",
-        "timeContext": {
-          "durationMs": 86400000
-        },
         "timeContextFromParameter": "TimeRange",
         "showRefreshButton": true,
         "queryType": 0,
@@ -572,9 +564,6 @@
         "showAnnotations": true,
         "showAnalytics": true,
         "title": "Application Streaming Overview",
-        "timeContext": {
-          "durationMs": 86400000
-        },
         "timeContextFromParameter": "TimeRange",
         "showRefreshButton": true,
         "queryType": 0,
@@ -656,9 +645,6 @@
         "showAnalytics": true,
         "title": "Task Results",
         "noDataMessage": "No task results data.",
-        "timeContext": {
-          "durationMs": 86400000
-        },
         "timeContextFromParameter": "TimeRange",
         "showRefreshButton": true,
         "queryType": 0,
@@ -739,9 +725,6 @@
         "aggregation": 5,
         "showAnnotations": true,
         "title": "Completed Tasks by Executors",
-        "timeContext": {
-          "durationMs": 86400000
-        },
         "timeContextFromParameter": "TimeRange",
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -816,9 +799,6 @@
         "aggregation": 5,
         "showAnnotations": true,
         "title": "Total Input Bytes",
-        "timeContext": {
-          "durationMs": 86400000
-        },
         "timeContextFromParameter": "TimeRange",
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -904,9 +884,6 @@
         "aggregation": 5,
         "showAnnotations": true,
         "title": "Total Run Time by Executor",
-        "timeContext": {
-          "durationMs": 86400000
-        },
         "timeContextFromParameter": "TimeRange",
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -993,9 +970,6 @@
         "showAnnotations": true,
         "title": "Stage Durations",
         "noDataMessage": "No spark stage data.",
-        "timeContext": {
-          "durationMs": 86400000
-        },
         "timeContextFromParameter": "TimeRange",
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -1081,9 +1055,6 @@
         "aggregation": 5,
         "showAnnotations": true,
         "title": "Executors CPU Usage",
-        "timeContext": {
-          "durationMs": 86400000
-        },
         "timeContextFromParameter": "TimeRange",
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -1171,9 +1142,6 @@
         "aggregation": 5,
         "showAnnotations": true,
         "title": "Executors Memory Usage",
-        "timeContext": {
-          "durationMs": 86400000
-        },
         "timeContextFromParameter": "TimeRange",
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -1260,9 +1228,6 @@
         "size": 0,
         "aggregation": 2,
         "title": "Input Bytes / Second",
-        "timeContext": {
-          "durationMs": 86400000
-        },
         "timeContextFromParameter": "TimeRange",
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -1295,9 +1260,6 @@
         "size": 0,
         "aggregation": 2,
         "title": "Output Bytes / Second",
-        "timeContext": {
-          "durationMs": 86400000
-        },
         "timeContextFromParameter": "TimeRange",
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -1330,9 +1292,6 @@
         "size": 0,
         "aggregation": 2,
         "title": "Serialization Time Percentage",
-        "timeContext": {
-          "durationMs": 86400000
-        },
         "timeContextFromParameter": "TimeRange",
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -1365,9 +1324,6 @@
         "size": 0,
         "aggregation": 2,
         "title": "Deserialization Time Percentage",
-        "timeContext": {
-          "durationMs": 86400000
-        },
         "timeContextFromParameter": "TimeRange",
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -1400,9 +1356,6 @@
         "size": 1,
         "aggregation": 5,
         "title": "Shuffle Summary",
-        "timeContext": {
-          "durationMs": 86400000
-        },
         "timeContextFromParameter": "TimeRange",
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -1562,9 +1515,6 @@
         "size": 0,
         "aggregation": 5,
         "title": "Accumulated Shuffle Written",
-        "timeContext": {
-          "durationMs": 86400000
-        },
         "timeContextFromParameter": "TimeRange",
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -1602,9 +1552,6 @@
         "size": 0,
         "aggregation": 5,
         "title": "Shuffle Remotes Bytes Read",
-        "timeContext": {
-          "durationMs": 86400000
-        },
         "timeContextFromParameter": "TimeRange",
         "queryType": 0,
         "resourceType": "microsoft.operationalinsights/workspaces",
@@ -1644,9 +1591,6 @@
         "showAnalytics": true,
         "title": "Streaming Total Processing Rate",
         "noDataMessage": "No streaming event data.",
-        "timeContext": {
-          "durationMs": 86400000
-        },
         "timeContextFromParameter": "TimeRange",
         "showRefreshButton": true,
         "queryType": 0,
@@ -1671,9 +1615,6 @@
         "showAnalytics": true,
         "title": "Streaming Inputs / Trigger",
         "noDataMessage": "No streaming event data.",
-        "timeContext": {
-          "durationMs": 86400000
-        },
         "timeContextFromParameter": "TimeRange",
         "showRefreshButton": true,
         "queryType": 0,
@@ -1712,6 +1653,9 @@
       },
       "name": "Custom Metrics Text"
     }
+  ],
+  "fallbackResourceIds": [
+    "/subscriptions/d66b1168-d835-4066-8c45-7d2ed713c082/resourcegroups/asethia/providers/Microsoft.OperationalInsights/workspaces/synapseloganalytics"
   ],
   "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
 }
